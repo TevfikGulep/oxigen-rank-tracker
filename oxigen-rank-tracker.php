@@ -1,18 +1,18 @@
 <?php
 /**
  * Plugin Name: Oxigen Rank Tracker
- * Description: Belirli sitelerin Google sıralamalarını izler ve raporlar.
+ * Description: Tracks and reports Google rankings for specific sites.
  * Version: 1.0.0
  * Author: Tevfik Gülep
  */
 
-// Güvenlik için doğrudan erişimi engelle
+// Prevent direct access for security
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
 function ort_plugin_init() {
-    // Eklenti dosyalarını yükle
+    // Load plugin files
     require_once plugin_dir_path( __FILE__ ) . 'includes/rank-tracker-functions.php';
     require_once plugin_dir_path( __FILE__ ) . 'includes/admin-settings.php';
     require_once plugin_dir_path( __FILE__ ) . 'includes/email-reports.php';
@@ -20,16 +20,16 @@ function ort_plugin_init() {
 }
 add_action( 'init', 'ort_plugin_init' );
 
-// Eklenti etkinleştirildiğinde yapılacak işlemler
+// Actions to be performed when the plugin is activated
 register_activation_hook( __FILE__, 'ort_activate_plugin' );
 function ort_activate_plugin() {
-    // Gerekli tabloları oluştur veya ayarları yap
-    ort_debug_log( 'Eklenti etkinleştirildi.' );
-    ort_create_rank_history_table(); // Veritabanı tablosunu oluştur
+    // Create necessary tables or set settings
+    ort_debug_log( 'Plugin activated.' );
+    ort_create_rank_history_table(); // Create database table
 }
 
-// Eklenti devre dışı bırakıldığında yapılacak işlemler
+// Actions to be performed when the plugin is deactivated
 register_deactivation_hook( __FILE__, 'ort_deactivate_plugin' );
 function ort_deactivate_plugin() {
-    ort_debug_log( 'Eklenti devre dışı bırakıldı.' );
+    ort_debug_log( 'Plugin deactivated.' );
 }

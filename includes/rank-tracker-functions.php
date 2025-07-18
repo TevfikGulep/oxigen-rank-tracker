@@ -6,11 +6,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Belirli bir anahtar kelime için Google sıralamasını kontrol eder ve geçmişi kaydeder.
+ * Checks Google ranking for a specific keyword and saves the history.
  *
- * @param string $keyword Aranacak anahtar kelime.
- * @param string $website Kontrol edilecek web sitesi.
- * @return int|false Sıralama numarası veya hata durumunda false.
+ * @param string $keyword Keyword to search for.
+ * @param string $website Website to check.
+ * @return int|false Rank number or false on error.
  */
 function ort_get_google_rank( $keyword, $website ) {
     global $wpdb;
@@ -20,22 +20,22 @@ function ort_get_google_rank( $keyword, $website ) {
     $response = wp_remote_get( $url );
 
     if ( is_wp_error( $response ) ) {
-        ort_debug_log( 'Google arama isteği başarısız: ' . $response->get_error_message() );
+        ort_debug_log( 'Google search request failed: ' . $response->get_error_message() );
         return false;
     }
 
     $body = wp_remote_retrieve_body( $response );
 
     if ( empty( $body ) ) {
-        ort_debug_log( 'Google arama sonucu boş.' );
+        ort_debug_log( 'Google search result is empty.' );
         return false;
     }
 
-    // Basit bir sıralama bulma işlemi (daha gelişmiş bir yöntem gerekebilir)
+    // Simple rank finding process (a more advanced method may be needed)
     $rank = strpos( $body, $website );
 
     if ( $rank !== false ) {
-        // Sıralama geçmişini kaydet
+        // Save rank history
         $wpdb->insert(
             $table_name,
             array(
@@ -52,14 +52,14 @@ function ort_get_google_rank( $keyword, $website ) {
             )
         );
 
-        return $rank; // Basit bir konum döndürüyoruz, daha doğru bir sıralama için geliştirilebilir.
+        return $rank; // We return a simple position, can be improved for a more accurate ranking.
     } else {
         return false;
     }
 }
 
 /**
- * Eklenti etkinleştirildiğinde çalışacak ve özel veritabanı tablosunu oluşturacak fonksiyon.
+ * Function to run when the plugin is activated and creates the custom database table.
  */
 function ort_create_rank_history_table() {
     global $wpdb;

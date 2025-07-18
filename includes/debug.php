@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Debug log dosyasına mesaj yazar.
+ * Writes a message to the debug log file.
  *
- * @param string $message Yazılacak mesaj.
+ * @param string $message Message to be written.
  */
 function ort_debug_log( $message ) {
     $log_file = plugin_dir_path( __FILE__ ) . 'debug.log';
