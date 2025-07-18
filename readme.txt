@@ -39,3 +39,11 @@ Yes, you can add and track multiple keywords within the plugin settings.
 
 == License ==
 This plugin is licensed under the GPLv2 or later. See the LICENSE file for more details.
+
+== Troubleshooting ==
+If you cannot see the "Keyword Rank Tracker" menu item in the WordPress admin sidebar:
+1. Make sure the plugin is activated and there are no fatal errors.
+2. Only administrators (users with `manage_options` capability) can see the menu.
+3. Check the `krt-debug.log` file in the plugin directory for error details.
+4. If you still have issues, try deactivating and reactivating the plugin.
+5. Ensure your WordPress version is compatible (see "Requires at least" above).
