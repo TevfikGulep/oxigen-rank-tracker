@@ -61,7 +61,6 @@ function ort_admin_page_content() {
                         ?>
                         <input type="hidden" name="ort_project_id" value="<?php echo esc_attr( $current_project_id ); ?>">
                         <?php
-                        // Pass project ID to the settings sections/fields
                         do_settings_sections( 'oxigen-rank-tracker' );
                         submit_button( 'Save Project Settings' );
                         ?>
@@ -116,28 +115,36 @@ function ort_register_settings() {
         'oxigen-rank-tracker'
     );
 
-    $current_project_id = ! empty( $_GET['project_id'] ) ? sanitize_text_field( $_GET['project_id'] ) : ( ! empty(get_option('ort_projects')) ? array_key_first( get_option('ort_projects') ) : 0 );
+    add_settings_field( 'ort_website', 'Website', 'ort_website_field_callback', 'oxigen-rank-tracker', 'ort_settings_section' );
+    add_settings_field( 'ort_email', 'Reporting Email Address', 'ort_email_field_callback', 'oxigen-rank-tracker', 'ort_settings_section' );
+    add_settings_field( 'ort_interval', 'Check Frequency', 'ort_interval_field_callback', 'oxigen-rank-tracker', 'ort_settings_section' );
+}
 
-    add_settings_field( 'ort_website', 'Website', 'ort_website_field_callback', 'oxigen-rank-tracker', 'ort_settings_section', ['project_id' => $current_project_id] );
-    add_settings_field( 'ort_email', 'Reporting Email Address', 'ort_email_field_callback', 'oxigen-rank-tracker', 'ort_settings_section', ['project_id' => $current_project_id] );
-    add_settings_field( 'ort_interval', 'Check Frequency', 'ort_interval_field_callback', 'oxigen-rank-tracker', 'ort_settings_section', ['project_id' => $current_project_id] );
+/**
+ * Helper function to get the current project ID from the URL or fallback to the first project.
+ * @return string The current project ID.
+ */
+function ort_get_current_project_id_for_settings() {
+    $projects = ort_get_projects();
+    // Get project ID from the URL if it exists, otherwise get the first available project.
+    return ! empty( $_GET['project_id'] ) ? sanitize_text_field( $_GET['project_id'] ) : ( ! empty( $projects ) ? array_key_first( $projects ) : 0 );
 }
 
 // Field Callback Functions
-function ort_website_field_callback($args) {
-    $project_id = $args['project_id'];
+function ort_website_field_callback() {
+    $project_id = ort_get_current_project_id_for_settings();
     $website = ort_get_project_setting( $project_id, 'website' );
     echo '<input type="text" name="ort_project_settings[website]" value="' . esc_attr( $website ) . '" class="regular-text" placeholder="https://example.com"/>';
 }
 
-function ort_email_field_callback($args) {
-    $project_id = $args['project_id'];
+function ort_email_field_callback() {
+    $project_id = ort_get_current_project_id_for_settings();
     $email = ort_get_project_setting( $project_id, 'email' );
     echo '<input type="email" name="ort_project_settings[email]" value="' . esc_attr( $email ) . '" class="regular-text" placeholder="email@example.com"/>';
 }
 
-function ort_interval_field_callback($args) {
-    $project_id = $args['project_id'];
+function ort_interval_field_callback() {
+    $project_id = ort_get_current_project_id_for_settings();
     $interval = ort_get_project_setting( $project_id, 'interval', 'daily' );
     $schedules = wp_get_schedules();
     echo '<select name="ort_project_settings[interval]">';
