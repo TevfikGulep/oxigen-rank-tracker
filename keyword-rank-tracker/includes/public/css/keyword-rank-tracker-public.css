@@ -1,0 +1,46 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+}
+
+h1, h2, h3 {
+    color: #2c3e50;
+}
+
+.keyword-rank-tracker {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.keyword-rank-tracker table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.keyword-rank-tracker th, .keyword-rank-tracker td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.keyword-rank-tracker th {
+    background-color: #f2f2f2;
+}
+
+.keyword-rank-tracker .rank-up {
+    color: green;
+}
+
+.keyword-rank-tracker .rank-down {
+    color: red;
+}
+
+.keyword-rank-tracker .no-change {
+    color: gray;
+}
