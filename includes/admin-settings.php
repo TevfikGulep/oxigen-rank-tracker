@@ -22,17 +22,82 @@ function ort_add_admin_menu() {
 
 // Yönetim sayfası içeriği
 function ort_admin_page_content() {
+    // Proje seçimi
+    $project_id = isset( $_GET['project_id'] ) ? intval( $_GET['project_id'] ) : 0;
+    $projects = ort_get_projects();
+
+    if ( empty( $projects ) && $project_id == 0 ) {
+        echo '<div class="wrap">';
+        echo '<h1>Oxigen Rank Tracker Ayarları</h1>';
+        echo '<p>Henüz bir proje oluşturulmadı. Lütfen bir proje oluşturun.</p>';
+        ort_display_add_project_form();
+        echo '</div>';
+        return;
+    }
+
+    if ( $project_id == 0 && ! empty( $projects ) ) {
+        $project_id = array_key_first( $projects );
+    }
+
     ?>
     <div class="wrap">
         <h1>Oxigen Rank Tracker Ayarları</h1>
+
+        <h2>Proje Seçimi</h2>
+        <form method="get">
+            <input type="hidden" name="page" value="oxigen-rank-tracker">
+            <label for="project_id">Proje Seç:</label>
+            <select name="project_id" id="project_id" onchange="this.form.submit()">
+                <?php
+                foreach ( $projects as $id => $project ) {
+                    echo '<option value="' . esc_attr( $id ) . '" ' . selected( $project_id, $id, false ) . '>' . esc_html( $project['name'] ) . '</option>';
+                }
+                ?>
+            </select>
+            <?php submit_button( 'Seç', 'secondary', 'submit', false ); ?>
+        </form>
+
+        <?php ort_display_add_project_form(); ?>
+
+        <h2>Web Sitesi Ayarları</h2>
         <form method="post" action="options.php">
             <?php
             settings_fields( 'ort_settings_group' );
             do_settings_sections( 'oxigen-rank-tracker' );
-            submit_button();
+            ?>
+            <input type="hidden" name="ort_project_id" value="<?php echo esc_attr( $project_id ); ?>">
+            <?php
+            submit_button( 'Web Sitesi Ayarlarını Kaydet', 'primary' );
             ?>
         </form>
+
+        <h2>Anahtar Kelime Ekle</h2>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="ort_add_keyword">
+            <?php wp_nonce_field( 'ort_add_keyword_nonce' ); ?>
+            <label for="ort_new_keyword">Yeni Anahtar Kelime:</label>
+            <input type="text" id="ort_new_keyword" name="ort_new_keyword" required>
+            <input type="hidden" name="ort_project_id" value="<?php echo esc_attr( $project_id ); ?>">
+            <?php submit_button( 'Anahtar Kelime Ekle', 'secondary' ); ?>
+        </form>
+
+        <h2>Mevcut Anahtar Kelimeler ve Sıralamalar</h2>
+        <?php ort_display_keyword_ranks( $project_id ); ?>
     </div>
+    <?php
+}
+
+// Proje ekleme formu
+function ort_display_add_project_form() {
+    ?>
+    <h2>Yeni Proje Ekle</h2>
+    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+        <input type="hidden" name="action" value="ort_add_project">
+        <?php wp_nonce_field( 'ort_add_project_nonce' ); ?>
+        <label for="ort_new_project_name">Proje Adı:</label>
+        <input type="text" id="ort_new_project_name" name="ort_new_project_name" required>
+        <?php submit_button( 'Proje Ekle', 'secondary' ); ?>
+    </form>
     <?php
 }
 
@@ -40,7 +105,6 @@ function ort_admin_page_content() {
 add_action( 'admin_init', 'ort_register_settings' );
 
 function ort_register_settings() {
-    register_setting( 'ort_settings_group', 'ort_keywords' );
     register_setting( 'ort_settings_group', 'ort_website' );
     register_setting( 'ort_settings_group', 'ort_email' );
     register_setting( 'ort_settings_group', 'ort_interval' );
@@ -50,14 +114,6 @@ function ort_register_settings() {
         'Genel Ayarlar',
         'ort_settings_section_callback',
         'oxigen-rank-tracker'
-    );
-
-    add_settings_field(
-        'ort_keywords',
-        'Anahtar Kelimeler (virgülle ayrılmış)',
-        'ort_keywords_field_callback',
-        'oxigen-rank-tracker',
-        'ort_settings_section'
     );
 
     add_settings_field(
@@ -78,7 +134,7 @@ function ort_register_settings() {
 
     add_settings_field(
         'ort_interval',
-        'Kontrol Aralığı (dakika)',
+        'Kontrol Aralığı',
         'ort_interval_field_callback',
         'oxigen-rank-tracker',
         'ort_settings_section'
@@ -87,29 +143,148 @@ function ort_register_settings() {
 
 // Ayar bölümü açıklaması
 function ort_settings_section_callback() {
-    echo '<p>Eklenti ayarlarını buradan yapılandırabilirsiniz.</p>';
-}
-
-// Anahtar kelimeler alanı
-function ort_keywords_field_callback() {
-    $keywords = get_option( 'ort_keywords' );
-    echo '<input type="text" name="ort_keywords" value="' . esc_attr( $keywords ) . '" size="80" />';
+    echo '<p>Web sitesi ve e-posta ayarlarını buradan yapılandırabilirsiniz.</p>';
 }
 
 // Web sitesi alanı
 function ort_website_field_callback() {
-    $website = get_option( 'ort_website' );
+    $project_id = isset( $_GET['project_id'] ) ? intval( $_GET['project_id'] ) : 0;
+    $website = ort_get_project_setting( $project_id, 'website' );
     echo '<input type="text" name="ort_website" value="' . esc_attr( $website ) . '" size="50" />';
 }
 
 // E-posta alanı
 function ort_email_field_callback() {
-    $email = get_option( 'ort_email' );
+    $project_id = isset( $_GET['project_id'] ) ? intval( $_GET['project_id'] ) : 0;
+    $email = ort_get_project_setting( $project_id, 'email' );
     echo '<input type="email" name="ort_email" value="' . esc_attr( $email ) . '" size="50" />';
 }
 
 // Kontrol aralığı alanı
 function ort_interval_field_callback() {
-    $interval = get_option( 'ort_interval' );
-    echo '<input type="number" name="ort_interval" value="' . esc_attr( $interval ) . '" />';
+    $project_id = isset( $_GET['project_id'] ) ? intval( $_GET['project_id'] ) : 0;
+    $interval = ort_get_project_setting( $project_id, 'interval', 'hourly' );
+    ?>
+    <select name="ort_interval">
+        <option value="hourly" <?php selected( $interval, 'hourly' ); ?>>Saatlik</option>
+        <option value="daily" <?php selected( $interval, 'daily' ); ?>>Günlük</option>
+        <option value="weekly" <?php selected( $interval, 'weekly' ); ?>>Haftalık</option>
+        <option value="monthly" <?php selected( $interval, 'monthly' ); ?>>Aylık</option>
+    </select>
+    <?php
+}
+
+// Yeni proje ekleme işlevi
+add_action( 'admin_post_ort_add_project', 'ort_add_project' );
+
+function ort_add_project() {
+    // Güvenlik kontrolü
+    if ( ! isset( $_POST['ort_new_project_name'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'ort_add_project_nonce' ) ) {
+        wp_die( 'Güvenlik hatası!' );
+    }
+
+    $new_project_name = sanitize_text_field( $_POST['ort_new_project_name'] );
+
+    if ( ! empty( $new_project_name ) ) {
+        $projects = ort_get_projects();
+        // Use wp_generate_uuid() if available, otherwise generate a random string
+        if ( function_exists( 'wp_generate_uuid' ) ) {
+            $new_project_id = wp_generate_uuid();
+        } else {
+            $new_project_id = uniqid( 'ort_' ); // Fallback for older WP versions
+        }
+        $projects[$new_project_id] = array(
+            'name' => $new_project_name,
+        );
+        update_option( 'ort_projects', $projects );
+
+        ort_debug_log( 'Yeni proje eklendi: ' . $new_project_name );
+    }
+
+    // Yönetim sayfasına geri yönlendir
+    wp_redirect( admin_url( 'admin.php?page=oxigen-rank-tracker' ) );
+    exit;
+}
+
+// Yeni anahtar kelime ekleme işlevi
+add_action( 'admin_post_ort_add_keyword', 'ort_add_keyword' );
+
+function ort_add_keyword() {
+    // Güvenlik kontrolü
+    if ( ! isset( $_POST['ort_new_keyword'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'ort_add_keyword_nonce' ) ) {
+        wp_die( 'Güvenlik hatası!' );
+    }
+
+    $new_keyword = sanitize_text_field( $_POST['ort_new_keyword'] );
+    $project_id = sanitize_text_field( $_POST['ort_project_id'] );
+
+    if ( ! empty( $new_keyword ) ) {
+        $keywords = ort_get_project_setting( $project_id, 'keywords', array() );
+        if ( ! is_array( $keywords ) ) {
+            $keywords = array();
+        }
+        $keywords[] = $new_keyword;
+        ort_update_project_setting( $project_id, 'keywords', $keywords );
+
+        ort_debug_log( 'Yeni anahtar kelime eklendi: ' . $new_keyword . ' - Proje: ' . $project_id );
+    }
+
+    // Yönetim sayfasına geri yönlendir
+    wp_redirect( admin_url( 'admin.php?page=oxigen-rank-tracker&project_id=' . $project_id ) );
+    exit;
+}
+
+// Anahtar kelime sıralamalarını görüntüleme işlevi
+function ort_display_keyword_ranks( $project_id ) {
+    $keywords = ort_get_project_setting( $project_id, 'keywords', array() );
+    $website = ort_get_project_setting( $project_id, 'website' );
+
+    if ( ! is_array( $keywords ) || empty( $keywords ) ) {
+        echo '<p>Henüz anahtar kelime eklenmedi.</p>';
+        return;
+    }
+
+    echo '<table class="wp-list-table widefat fixed striped">';
+    echo '<thead><tr><th>Anahtar Kelime</th><th>Sıralama</th></tr></thead>';
+    echo '<tbody>';
+
+    foreach ( $keywords as $keyword ) {
+        $keyword = trim( $keyword );
+        $rank = ort_get_google_rank( $keyword, $website );
+
+        echo '<tr>';
+        echo '<td>' . esc_html( $keyword ) . '</td>';
+        if ( $rank !== false ) {
+            echo '<td>' . esc_html( $rank ) . '</td>';
+        } else {
+            echo '<td>Sıralama bulunamadı</td>';
+        }
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+}
+
+// Projeleri getirme işlevi
+function ort_get_projects() {
+    return get_option( 'ort_projects', array() );
+}
+
+// Proje ayarını getirme işlevi
+function ort_get_project_setting( $project_id, $setting_name, $default = '' ) {
+    $projects = ort_get_projects();
+    if ( isset( $projects[$project_id] ) && isset( $projects[$project_id][$setting_name] ) ) {
+        return $projects[$project_id][$setting_name];
+    }
+    return $default;
+}
+
+// Proje ayarını güncelleme işlevi
+function ort_update_project_setting( $project_id, $setting_name, $setting_value ) {
+    $projects = ort_get_projects();
+    if ( ! isset( $projects[$project_id] ) ) {
+        $projects[$project_id] = array();
+    }
+    $projects[$project_id][$setting_name] = $setting_value;
+    update_option( 'ort_projects', $projects );
 }

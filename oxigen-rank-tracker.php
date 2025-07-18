@@ -11,11 +11,14 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Eklenti dosyalarını yükle
-require_once plugin_dir_path( __FILE__ ) . 'includes/rank-tracker-functions.php';
-require_once plugin_dir_path( __FILE__ ) . 'includes/admin-settings.php';
-require_once plugin_dir_path( __FILE__ ) . 'includes/email-reports.php';
-require_once plugin_dir_path( __FILE__ ) . 'includes/debug.php';
+function ort_plugin_init() {
+    // Eklenti dosyalarını yükle
+    require_once plugin_dir_path( __FILE__ ) . 'includes/rank-tracker-functions.php';
+    require_once plugin_dir_path( __FILE__ ) . 'includes/admin-settings.php';
+    require_once plugin_dir_path( __FILE__ ) . 'includes/email-reports.php';
+    require_once plugin_dir_path( __FILE__ ) . 'includes/debug.php';
+}
+add_action( 'init', 'ort_plugin_init' );
 
 // Eklenti etkinleştirildiğinde yapılacak işlemler
 register_activation_hook( __FILE__, 'ort_activate_plugin' );
