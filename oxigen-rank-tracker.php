@@ -25,6 +25,7 @@ register_activation_hook( __FILE__, 'ort_activate_plugin' );
 function ort_activate_plugin() {
     // Gerekli tabloları oluştur veya ayarları yap
     ort_debug_log( 'Eklenti etkinleştirildi.' );
+    ort_create_rank_history_table(); // Veritabanı tablosunu oluştur
 }
 
 // Eklenti devre dışı bırakıldığında yapılacak işlemler

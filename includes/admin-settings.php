@@ -193,16 +193,26 @@ function ort_add_project() {
         } else {
             $new_project_id = uniqid( 'ort_' ); // Fallback for older WP versions
         }
+
+        // Debug: Output the generated project ID
+        ort_debug_log( 'Yeni proje ID: ' . $new_project_id );
+
         $projects[$new_project_id] = array(
             'name' => $new_project_name,
         );
+
+        // Debug: Output the projects array before saving
+        ort_debug_log( 'Projeler dizisi: ' . print_r( $projects, true ) );
+
         update_option( 'ort_projects', $projects );
 
         ort_debug_log( 'Yeni proje eklendi: ' . $new_project_name );
     }
 
     // Yönetim sayfasına geri yönlendir
-    wp_redirect( admin_url( 'admin.php?page=oxigen-rank-tracker' ) );
+    $redirect_url = admin_url( 'admin.php?page=oxigen-rank-tracker' );
+    ort_debug_log( 'Yönlendirme URL\'si: ' . $redirect_url );
+    wp_redirect( $redirect_url );
     exit;
 }
 
@@ -236,6 +246,8 @@ function ort_add_keyword() {
 
 // Anahtar kelime sıralamalarını görüntüleme işlevi
 function ort_display_keyword_ranks( $project_id ) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'ort_rank_history';
     $keywords = ort_get_project_setting( $project_id, 'keywords', array() );
     $website = ort_get_project_setting( $project_id, 'website' );
 
@@ -245,20 +257,66 @@ function ort_display_keyword_ranks( $project_id ) {
     }
 
     echo '<table class="wp-list-table widefat fixed striped">';
-    echo '<thead><tr><th>Anahtar Kelime</th><th>Sıralama</th></tr></thead>';
+    echo '<thead><tr><th>Anahtar Kelime</th><th>İlk Sıralama</th><th>Son Sıralama</th><th>Sıralama Geçmişi</th></tr></thead>';
     echo '<tbody>';
 
     foreach ( $keywords as $keyword ) {
         $keyword = trim( $keyword );
-        $rank = ort_get_google_rank( $keyword, $website );
+
+        // İlk sıralamayı al
+        $first_rank_query = $wpdb->prepare(
+            "SELECT rank, timestamp FROM $table_name WHERE keyword = %s AND website = %s ORDER BY timestamp ASC LIMIT 1",
+            $keyword,
+            $website
+        );
+        $first_rank_data = $wpdb->get_row( $first_rank_query );
+
+        // Son sıralamayı al
+        $last_rank_query = $wpdb->prepare(
+            "SELECT rank, timestamp FROM $table_name WHERE keyword = %s AND website = %s ORDER BY timestamp DESC LIMIT 1",
+            $keyword,
+            $website
+        );
+        $last_rank_data = $wpdb->get_row( $last_rank_query );
+
+        // Tüm sıralama geçmişini al
+        $all_ranks_query = $wpdb->prepare(
+            "SELECT rank, timestamp FROM $table_name WHERE keyword = %s AND website = %s ORDER BY timestamp ASC",
+            $keyword,
+            $website
+        );
+        $all_ranks = $wpdb->get_results( $all_ranks_query );
 
         echo '<tr>';
         echo '<td>' . esc_html( $keyword ) . '</td>';
-        if ( $rank !== false ) {
-            echo '<td>' . esc_html( $rank ) . '</td>';
+
+        // İlk sıralama verisi
+        if ( $first_rank_data ) {
+            echo '<td>' . esc_html( $first_rank_data->rank ) . ' (' . date( 'Y-m-d H:i:s', strtotime( $first_rank_data->timestamp ) ) . ')</td>';
         } else {
             echo '<td>Sıralama bulunamadı</td>';
         }
+
+        // Son sıralama verisi
+        if ( $last_rank_data ) {
+            echo '<td>' . esc_html( $last_rank_data->rank ) . ' (' . date( 'Y-m-d H:i:s', strtotime( $last_rank_data->timestamp ) ) . ')</td>';
+        } else {
+            echo '<td>Sıralama bulunamadı</td>';
+        }
+
+        // Sıralama geçmişi
+        echo '<td>';
+        if ( ! empty( $all_ranks ) ) {
+            echo '<ul>';
+            foreach ( $all_ranks as $rank_data ) {
+                echo '<li>' . esc_html( $rank_data->rank ) . ' (' . date( 'Y-m-d H:i:s', strtotime( $rank_data->timestamp ) ) . ')</li>';
+            }
+            echo '</ul>';
+        } else {
+            echo 'Sıralama geçmişi bulunamadı';
+        }
+        echo '</td>';
+
         echo '</tr>';
     }
 
