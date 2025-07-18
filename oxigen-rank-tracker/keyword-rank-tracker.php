@@ -3,8 +3,8 @@
  * Plugin Name: Keyword Rank Tracker
  * Description: A plugin to track keyword rankings daily.
  * Version: 1.0
- * Author: Your Name
- * Author URI: https://yourwebsite.com
+ * Author: Tevfik Gülep
+ * Author URI: https://oxigen.team
  */
 
 // If this file is called directly, abort.
